@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.1;net8.0</TargetFrameworks>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <SignAssembly>False</SignAssembly>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MemoryPack" Version="1.21.1" />
+  </ItemGroup>
+
+    <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
+	    <PostBuildEvent>copy "$(TargetDir)SyncWorld2DProtocol.dll" "C:\Users\flowe\Desktop\syncworld-2d-client\Assets\Plugins\SyncWorld2DProtocol.dll"</PostBuildEvent>
+    </PropertyGroup>
+</Project>
