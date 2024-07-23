@@ -1,5 +1,6 @@
 ﻿using MemoryPack;
 using System;
+using System.IO;
 
 namespace SyncWorld2DProtocol.Cts
 {
@@ -7,6 +8,13 @@ namespace SyncWorld2DProtocol.Cts
     {
         bool OnRequestJoin();
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="receiveRingBuffer"></param>
+        /// <exception cref="InvalidProgramException"></exception>
+        /// <exception cref="InternalBufferOverflowException"></exception>
+        /// <exception cref="InvalidProgramException"></exception>
         public sealed void Handle(RingBuffer receiveRingBuffer)
         {
             while (true)

@@ -5,7 +5,8 @@ namespace SyncWorld2DProtocol.Stc
 {
     public interface IStcHandler
     {
-        bool OnHelloClient(string message);
+        bool OnSpawnEntity(uint entityId, float x, float y);
+        bool OnDespawnEntity(uint entityId);
 
         public sealed void Handle(RingBuffer receiveRingBuffer)
         {
@@ -29,10 +30,10 @@ namespace SyncWorld2DProtocol.Stc
                 
                 switch (headerMessageId)
                 {
-                    case Protocol.StcHelloClient:
+                    case Protocol.StcSpawnPlayer:
                         {
-                            var helloClientMessage = MemoryPackSerializer.Deserialize<HelloClientMessage>(body);
-                            shouldContinue = OnHelloClient(helloClientMessage.Message);
+                            var spawnEntityMessage = MemoryPackSerializer.Deserialize<SpawnEntityMessage>(body);
+                            shouldContinue = OnSpawnEntity(spawnEntityMessage.EntityId, spawnEntityMessage.X, spawnEntityMessage.Y);
                             break;
                         }
                     default:
@@ -50,8 +51,16 @@ namespace SyncWorld2DProtocol.Stc
     }
 
     [MemoryPackable]
-    public partial struct HelloClientMessage
+    public partial struct SpawnEntityMessage
     {
-        public string Message { get; set; }
+        public uint EntityId { get; set; }
+        public float X { get; set; }
+        public float Y { get; set; }
+    }
+
+    [MemoryPackable]
+    public partial struct DespawnEntityMessage
+    {
+        public uint EntityId { get; set; }
     }
 }

@@ -1,16 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using SyncWorld2DProtocol;
+using SyncWorld2DProtocol.Stc;
 
 namespace SyncWorld2DServer
 {
-    internal class Handler : SyncWorld2DProtocol.Stc.IStcHandler
+    internal class Handler : SyncWorld2DProtocol.Cts.ICtsHandler
     {
-        public bool OnHelloClient(string message)
+        private readonly Context _context;
+        
+        public Handler(Context context)
         {
-            Console.WriteLine(message);
+            _context = context;
+        }
+
+        public bool OnRequestJoin()
+        {
+            if (_context.World.SpawnPlayerCharacter(_context.Id, out var spawnedEntityId))
+            {
+                if (_context.World.TryGetPlayerPosition(_context.Id, out var position))
+                {
+                    var spawnEntityMessage = new SpawnEntityMessage() { EntityId = spawnedEntityId, X = position.Item1, Y = position.Item2 };
+                    _context.WriteMessage(Protocol.StcSpawnPlayer, ref spawnEntityMessage);
+                }
+            }
             return true;
         }
     }
