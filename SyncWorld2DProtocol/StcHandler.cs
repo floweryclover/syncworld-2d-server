@@ -7,6 +7,8 @@ namespace SyncWorld2DProtocol.Stc
     {
         bool OnSpawnEntity(uint entityId, float x, float y);
         bool OnDespawnEntity(uint entityId);
+        bool OnPossessEntity(uint entityId);
+        bool OnUnpossessEntity();
 
         public sealed void Handle(RingBuffer receiveRingBuffer)
         {
@@ -27,13 +29,30 @@ namespace SyncWorld2DProtocol.Stc
                 var body = receiveRingBuffer.Pop(headerBodySize);
 
                 var shouldContinue = false;
-                
                 switch (headerMessageId)
                 {
-                    case Protocol.StcSpawnPlayer:
+                    case Protocol.StcSpawnEntity:
                         {
                             var spawnEntityMessage = MemoryPackSerializer.Deserialize<SpawnEntityMessage>(body);
                             shouldContinue = OnSpawnEntity(spawnEntityMessage.EntityId, spawnEntityMessage.X, spawnEntityMessage.Y);
+                            break;
+                        }
+                    case Protocol.StcDespawnEntity:
+                        {
+                            var despawnEntityMessage = MemoryPackSerializer.Deserialize<DespawnEntityMessage>(body);
+                            shouldContinue = OnDespawnEntity(despawnEntityMessage.EntityId);
+                            break;
+                        }
+                    case Protocol.StcPossessEntity:
+                        {
+                            var possessEntityMessage = MemoryPackSerializer.Deserialize<PossessEntityMessage>(body);
+                            shouldContinue = OnPossessEntity(possessEntityMessage.EntityId);
+                            break;
+                        }
+                    case Protocol.StcUnpossessEntity:
+                        {
+                            var unpossessEntityMessage = MemoryPackSerializer.Deserialize<UnpossessEntityMessage>(body);
+                            shouldContinue = OnUnpossessEntity();
                             break;
                         }
                     default:
@@ -63,4 +82,13 @@ namespace SyncWorld2DProtocol.Stc
     {
         public uint EntityId { get; set; }
     }
+
+    [MemoryPackable]
+    public partial struct PossessEntityMessage
+    {
+        public uint EntityId { get; set; }
+    }
+
+    [MemoryPackable]
+    public partial struct UnpossessEntityMessage { }
 }

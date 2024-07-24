@@ -19,7 +19,10 @@ namespace SyncWorld2DServer
                 if (_context.World.TryGetPlayerPosition(_context.Id, out var position))
                 {
                     var spawnEntityMessage = new SpawnEntityMessage() { EntityId = spawnedEntityId, X = position.Item1, Y = position.Item2 };
-                    _context.WriteMessage(Protocol.StcSpawnPlayer, ref spawnEntityMessage);
+                    _context.WriteMessage(Protocol.StcSpawnEntity, ref spawnEntityMessage);
+
+                    var possessEntityMessage = new PossessEntityMessage() { EntityId = spawnedEntityId };
+                    _context.WriteMessage(Protocol.StcPossessEntity, ref possessEntityMessage);
                 }
             }
             return true;

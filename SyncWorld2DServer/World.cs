@@ -27,7 +27,7 @@ namespace SyncWorld2DServer
                 if (_playerCharacters.TryAdd(owningPlayerId, _newEntityId))
                 {
                     spawnedEntityId = _newEntityId;
-                    _playerPosition.TryAdd(_newEntityId, new ValueTuple<float, float>(0.0f, 0.0f));
+                    _playerPosition.TryAdd(_newEntityId, new ValueTuple<float, float>(0.0f, 5.0f));
                     _newEntityId++;
                     return true;
                 }
