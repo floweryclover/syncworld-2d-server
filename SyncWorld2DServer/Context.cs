@@ -35,7 +35,6 @@ namespace SyncWorld2DServer
 
         public void OnDisconnected()
         {
-            _world.DespawnPlayerCharacter(_id);
         }
 
         public void Dispose()

@@ -4,8 +4,8 @@ using SyncWorld2DServer;
 
 var tcpListener = TcpListener.Create(31415);
 tcpListener.Start(8);
-
 uint newPlayerId = 0;
+var newPlayerIdLock = new object();
 var world = new World();
 
 while (true)
@@ -14,9 +14,17 @@ while (true)
     var _ = Task.Run(
         async () =>
         {
-            Console.WriteLine($"{tcpClient.Client.RemoteEndPoint} 접속");
-            var context = new Context(tcpClient, newPlayerId, world);
-            newPlayerId++;
+            uint playerId;
+            lock (newPlayerIdLock)
+            {
+                playerId = newPlayerId;
+                newPlayerId++;
+            }
+            Console.WriteLine($"{tcpClient.Client.RemoteEndPoint}({playerId}) 접속");
+            // World 참여
+            var context = new Context(tcpClient, playerId, world);
+            world.OnPlayerJoined(playerId, context);
+
             var cancellationTokenSource = new CancellationTokenSource();
             var networkStream = tcpClient.GetStream();
             var receivingTask = Task.Run(
@@ -37,6 +45,11 @@ while (true)
                             }
                             break;
                         }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine($"{playerId} 예외 발생: {e.Message}");
+                            break;
+                        }
                     }
                 });
 
@@ -55,8 +68,9 @@ while (true)
             cancellationTokenSource.Cancel();
             await Task.WhenAll(receivingTask, sendingTask);
 
+            world.OnPlayerLeft(playerId);
             context.OnDisconnected();
-            Console.WriteLine($"{tcpClient.Client.RemoteEndPoint} 접속 종료");
+            Console.WriteLine($"{tcpClient.Client.RemoteEndPoint}({playerId}) 접속 종료");
             context.Dispose();
         });
 }

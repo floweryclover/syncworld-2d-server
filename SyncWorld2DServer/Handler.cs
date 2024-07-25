@@ -16,16 +16,15 @@ namespace SyncWorld2DServer
         {
             if (_context.World.SpawnPlayerCharacter(_context.Id, out var spawnedEntityId))
             {
-                if (_context.World.TryGetPlayerPosition(_context.Id, out var position))
+                if (_context.World.TryGetEntityPosition(spawnedEntityId, out var position))
                 {
-                    var spawnEntityMessage = new SpawnEntityMessage() { EntityId = spawnedEntityId, X = position.Item1, Y = position.Item2 };
-                    _context.WriteMessage(Protocol.StcSpawnEntity, ref spawnEntityMessage);
-
                     var possessEntityMessage = new PossessEntityMessage() { EntityId = spawnedEntityId };
                     _context.WriteMessage(Protocol.StcPossessEntity, ref possessEntityMessage);
+                    return true;
                 }
             }
-            return true;
+
+            throw new InvalidOperationException($"{_context.Id} 의 RequestJoin()을 정상적으로 처리하지 못했습니다.");
         }
     }
 }
