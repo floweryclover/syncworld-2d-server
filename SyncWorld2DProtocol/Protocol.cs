@@ -9,7 +9,10 @@
         public const int StcDespawnEntity = 2;
         public const int StcPossessEntity = 3;
         public const int StcUnpossessEntity = 4;
+        public const int StcMoveEntity = 5;
+        public const int StcAssignEntityColor = 6;
 
         public const int CtsRequestJoin = 1;
+        public const int CtsSendCurrentPosition = 2;
     }
 }

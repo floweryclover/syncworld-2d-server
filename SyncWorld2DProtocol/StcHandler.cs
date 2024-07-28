@@ -9,6 +9,8 @@ namespace SyncWorld2DProtocol.Stc
         bool OnDespawnEntity(uint entityId);
         bool OnPossessEntity(uint entityId);
         bool OnUnpossessEntity();
+        bool OnMoveEntity(uint entityId, float x, float y);
+        bool OnAssignEntityColor(uint entityId, float r, float g, float b);
 
         public sealed void Handle(RingBuffer receiveRingBuffer)
         {
@@ -55,6 +57,18 @@ namespace SyncWorld2DProtocol.Stc
                             shouldContinue = OnUnpossessEntity();
                             break;
                         }
+                    case Protocol.StcMoveEntity:
+                        {
+                            var moveEntityMessage = MemoryPackSerializer.Deserialize<MoveEntityMessage>(body);
+                            shouldContinue = OnMoveEntity(moveEntityMessage.EntityId, moveEntityMessage.X, moveEntityMessage.Y);
+                            break;
+                        }
+                    case Protocol.StcAssignEntityColor:
+                        {
+                            var assignEntityColorMessage = MemoryPackSerializer.Deserialize<AssignEntityColorMessage>(body);
+                            shouldContinue = OnAssignEntityColor(assignEntityColorMessage.EntityId, assignEntityColorMessage.R, assignEntityColorMessage.G, assignEntityColorMessage.B);
+                            break;
+                        }
                     default:
                         {
                             throw new InvalidProgramException($"알 수 없는 STC 메시지 ID를 수신했습니다: {headerMessageId}");
@@ -91,4 +105,21 @@ namespace SyncWorld2DProtocol.Stc
 
     [MemoryPackable]
     public partial struct UnpossessEntityMessage { }
+
+    [MemoryPackable]
+    public partial struct MoveEntityMessage
+    {
+        public uint EntityId { get; set; }
+        public float X { get; set; }
+        public float Y { get; set; }
+    }
+
+    [MemoryPackable]
+    public partial struct AssignEntityColorMessage
+    {
+        public uint EntityId { get; set; }
+        public float R { get; set; }
+        public float G { get; set; }
+        public float B { get; set; }
+    }
 }

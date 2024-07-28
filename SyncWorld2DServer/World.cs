@@ -12,7 +12,8 @@ namespace SyncWorld2DServer
         private readonly object _newEntityIdLock;
 
         // 컴포넌트
-        private ConcurrentDictionary<uint, ValueTuple<float, float>> _playerPosition;
+        private ConcurrentDictionary<uint, (float, float)> _entityPosition;
+        private ConcurrentDictionary<uint, (float, float, float)> _entityColor;
         
         public World()
         {
@@ -21,7 +22,8 @@ namespace SyncWorld2DServer
             _newEntityId = 0;        
             _newEntityIdLock = new object();
 
-            _playerPosition = new ConcurrentDictionary<uint, ValueTuple<float, float>>();
+            _entityPosition = new ConcurrentDictionary<uint, (float, float)>();
+            _entityColor = new ConcurrentDictionary<uint, (float, float, float)>();
         }
 
         public bool SpawnPlayerCharacter(uint owningPlayerId, out uint spawnedEntityId)
@@ -37,12 +39,20 @@ namespace SyncWorld2DServer
                 _newEntityId++;
             }
 
-            _playerPosition.TryAdd(spawnedEntityId, new ValueTuple<float, float>(0.0f, 5.0f));
+            var spawnPosition = new ValueTuple<float, float>(0.0f, 5.0f);
+            var random = new Random();
+            var color = new ValueTuple<float, float, float>(random.NextSingle(), random.NextSingle(), random.NextSingle());
 
-            foreach (var context in _players.Values)
+            _entityPosition.TryAdd(spawnedEntityId, spawnPosition);
+            _entityColor.TryAdd(spawnedEntityId, color);
+
+            var spawnEntityMessage = new SpawnEntityMessage() { EntityId = spawnedEntityId, X = spawnPosition.Item1, Y = spawnPosition.Item2 };
+            var assignEntityColorMessage = new AssignEntityColorMessage { EntityId = spawnedEntityId, R = color.Item1, G = color.Item2, B = color.Item3 };
+            foreach (var context in _players.Values)          
             {
-                var spawnEntityMessage = new SpawnEntityMessage() { EntityId = spawnedEntityId, X = 0.0f, Y = 5.0f };
+
                 context.WriteMessage(Protocol.StcSpawnEntity, ref spawnEntityMessage);
+                context.WriteMessage(Protocol.StcAssignEntityColor, ref assignEntityColorMessage);
             }    
 
             return true;
@@ -62,10 +72,11 @@ namespace SyncWorld2DServer
                 context.WriteMessage(Protocol.StcDespawnEntity, ref despawnEntityMessage);
             }
 
-            _playerPosition.Remove(entityId, out _);
+            _entityPosition.Remove(entityId, out _);
+            _entityColor.Remove(entityId, out _);
         }
 
-        public bool TryGetEntityPosition(uint entityId, out ValueTuple<float, float> position) => _playerPosition.TryGetValue(entityId, out position);
+        public bool TryGetEntityPosition(uint entityId, out ValueTuple<float, float> position) => _entityPosition.TryGetValue(entityId, out position);
 
         public void OnPlayerJoined(uint playerId, Context context)
         {
@@ -77,10 +88,16 @@ namespace SyncWorld2DServer
 
             foreach (var entityId in _playerCharacters.Values)
             {
-                if (_playerPosition.TryGetValue(entityId, out var position))
+                if (_entityPosition.TryGetValue(entityId, out var position))
                 {
                     var spawnEntityMessage = new SpawnEntityMessage() { EntityId = entityId, X = position.Item1, Y = position.Item2 };
                     _players[playerId].WriteMessage(Protocol.StcSpawnEntity, ref spawnEntityMessage);
+                }
+
+                if (_entityColor.TryGetValue(entityId, out var color))
+                {
+                    var assignEntityColorMessage = new AssignEntityColorMessage() { EntityId = entityId, R = color.Item1, G = color.Item2, B = color.Item3 };
+                    _players[playerId].WriteMessage(Protocol.StcAssignEntityColor, ref assignEntityColorMessage);
                 }
             }
         }
@@ -93,6 +110,31 @@ namespace SyncWorld2DServer
             }
             DespawnPlayerCharacter(playerId);
             _players.TryRemove(playerId, out _);
+        }
+
+        public void MovePlayerCharacter(uint playerId, float x, float y)
+        {
+            if (!_playerCharacters.TryGetValue(playerId, out var entityId))
+            {
+                return;
+            }
+
+            if (!_entityPosition.ContainsKey(entityId))
+            {
+                return;
+            }
+
+            _entityPosition[entityId] = (x, y);
+
+            var message = new MoveEntityMessage() { EntityId = entityId, X = x, Y = y };
+            foreach (var context in _players.Values)
+            {
+                if (context.Id == playerId)
+                {
+                    continue;
+                }
+                context.WriteMessage(Protocol.StcMoveEntity, ref message);
+            }
         }
     }
 }

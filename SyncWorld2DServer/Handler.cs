@@ -26,5 +26,11 @@ namespace SyncWorld2DServer
 
             throw new InvalidOperationException($"{_context.Id} 의 RequestJoin()을 정상적으로 처리하지 못했습니다.");
         }
+
+        public bool OnSendCurrentPosition(float x, float y)
+        {
+            _context.World.MovePlayerCharacter(_context.Id, x, y);
+            return true;
+        }
     }
 }
