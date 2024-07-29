@@ -27,9 +27,9 @@ namespace SyncWorld2DServer
             throw new InvalidOperationException($"{_context.Id} 의 RequestJoin()을 정상적으로 처리하지 못했습니다.");
         }
 
-        public bool OnSendCurrentPosition(float x, float y)
+        public bool OnSendCurrentPosition(float positionX, float positionY, float velocityX, float velocityY, float accelerationX, float accelerationY)
         {
-            _context.World.MovePlayerCharacter(_context.Id, x, y);
+            _context.World.MovePlayerCharacter(_context.Id, positionX, positionY, velocityX, velocityY, accelerationX, accelerationY);
             return true;
         }
     }

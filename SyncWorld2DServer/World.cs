@@ -112,7 +112,7 @@ namespace SyncWorld2DServer
             _players.TryRemove(playerId, out _);
         }
 
-        public void MovePlayerCharacter(uint playerId, float x, float y)
+        public void MovePlayerCharacter(uint playerId, float positionX, float positionY, float velocityX, float velocityY, float accelerationX, float accelerationY)
         {
             if (!_playerCharacters.TryGetValue(playerId, out var entityId))
             {
@@ -124,9 +124,18 @@ namespace SyncWorld2DServer
                 return;
             }
 
-            _entityPosition[entityId] = (x, y);
+            var pingDeltaX = velocityX * 0.01f; // 10ms의 핑동안 이동한 X 거리
+            var pingDeltaY = velocityY * 0.01f; // 10ms의 핑동안 이동한 Y 거리
 
-            var message = new MoveEntityMessage() { EntityId = entityId, X = x, Y = y };
+            var beginX = positionX + pingDeltaX; // 클라이언트가 보낸 X좌표 + 10ms의 핑동안 이동한 거리 
+            var beginY = positionY + pingDeltaX; // 클라이언트가 보낸 Y좌표 + 10ms의 핑동안 이동한 거리
+
+            var targetX = beginX + velocityX * 0.5f + 0.5f * accelerationX * 0.25f; // 다음 주기에 받을 클라이언트 X좌표의 예상된 값
+            var targetY = beginY + velocityY * 0.5f + 0.5f * accelerationY * 0.25f; // 다음 주기에 받을 클라이언트 Y좌표의 예상된 값
+
+            _entityPosition[entityId] = (beginX, beginY);
+
+            var message = new MoveEntityMessage() { EntityId = entityId, X = targetX, Y = targetY };
             foreach (var context in _players.Values)
             {
                 if (context.Id == playerId)

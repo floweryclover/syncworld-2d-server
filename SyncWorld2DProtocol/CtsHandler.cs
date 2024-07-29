@@ -7,7 +7,7 @@ namespace SyncWorld2DProtocol.Cts
     public interface ICtsHandler
     {
         bool OnRequestJoin();
-        bool OnSendCurrentPosition(float x, float y);
+        bool OnSendCurrentPosition(float positionX, float positionY, float velocityX, float velocityY, float accelerationX, float accelerationY);
         /// <summary>
         /// 
         /// </summary>
@@ -46,7 +46,13 @@ namespace SyncWorld2DProtocol.Cts
                     case Protocol.CtsSendCurrentPosition:
                         {
                             var sendCurrentPositionMessage = MemoryPackSerializer.Deserialize<SendCurrentPositionMessage>(body);
-                            shouldContinue = OnSendCurrentPosition(sendCurrentPositionMessage.X, sendCurrentPositionMessage.Y);
+                            shouldContinue = OnSendCurrentPosition(
+                                sendCurrentPositionMessage.PositionX, 
+                                sendCurrentPositionMessage.PositionY,
+                                sendCurrentPositionMessage.VelocityX, 
+                                sendCurrentPositionMessage.VelocityY,
+                                sendCurrentPositionMessage.AccelerationX,
+                                sendCurrentPositionMessage.AccelerationY);
                             break;
                         }
                     default:
@@ -69,7 +75,14 @@ namespace SyncWorld2DProtocol.Cts
     [MemoryPackable]
     public partial struct SendCurrentPositionMessage
     {
-        public float X { get; set; }
-        public float Y { get; set; }
+        public float PositionX { get; set; }
+        public float PositionY { get; set; }
+
+        public float VelocityX { get; set; }
+        public float VelocityY { get; set; }
+
+        public float AccelerationX { get; set; }
+        public float AccelerationY { get; set; }
+
     }
 }
