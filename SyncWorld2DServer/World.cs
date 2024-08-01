@@ -130,8 +130,8 @@ namespace SyncWorld2DServer
             var beginX = positionX + pingDeltaX; // 클라이언트가 보낸 X좌표 + 10ms의 핑동안 이동한 거리 
             var beginY = positionY + pingDeltaX; // 클라이언트가 보낸 Y좌표 + 10ms의 핑동안 이동한 거리
 
-            var targetX = beginX + velocityX * 0.5f + 0.5f * accelerationX * 0.25f; // 다음 주기에 받을 클라이언트 X좌표의 예상된 값
-            var targetY = beginY + velocityY * 0.5f + 0.5f * accelerationY * 0.25f; // 다음 주기에 받을 클라이언트 Y좌표의 예상된 값
+            var targetX = beginX + velocityX * 0.1f + 0.5f * accelerationX * 0.01f; // 다음 주기에 받을 클라이언트 X좌표의 예상된 값
+            var targetY = beginY + velocityY * 0.1f + 0.5f * accelerationY * 0.01f; // 다음 주기에 받을 클라이언트 Y좌표의 예상된 값
 
             _entityPosition[entityId] = (beginX, beginY);
 

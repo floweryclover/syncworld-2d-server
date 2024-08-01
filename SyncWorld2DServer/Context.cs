@@ -94,7 +94,7 @@ namespace SyncWorld2DServer
 
             if (readableOnceSize == 0)
             {
-                await Task.Delay(500);
+                await Task.Delay(100);
                 return;
             }
 
