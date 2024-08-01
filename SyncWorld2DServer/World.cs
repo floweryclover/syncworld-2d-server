@@ -48,12 +48,9 @@ namespace SyncWorld2DServer
 
             var spawnEntityMessage = new SpawnEntityMessage() { EntityId = spawnedEntityId, X = spawnPosition.Item1, Y = spawnPosition.Item2 };
             var assignEntityColorMessage = new AssignEntityColorMessage { EntityId = spawnedEntityId, R = color.Item1, G = color.Item2, B = color.Item3 };
-            foreach (var context in _players.Values)          
-            {
 
-                context.WriteMessage(Protocol.StcSpawnEntity, ref spawnEntityMessage);
-                context.WriteMessage(Protocol.StcAssignEntityColor, ref assignEntityColorMessage);
-            }    
+            Broadcast(Protocol.StcSpawnEntity, ref spawnEntityMessage);
+            Broadcast(Protocol.StcAssignEntityColor, ref assignEntityColorMessage);
 
             return true;
         }
@@ -65,12 +62,8 @@ namespace SyncWorld2DServer
             {
                 return;
             }
-
-            foreach (var context in _players.Values)
-            {
-                var despawnEntityMessage = new DespawnEntityMessage() { EntityId = entityId };
-                context.WriteMessage(Protocol.StcDespawnEntity, ref despawnEntityMessage);
-            }
+            var despawnEntityMessage = new DespawnEntityMessage() { EntityId = entityId };
+            Broadcast(Protocol.StcDespawnEntity, ref despawnEntityMessage);
 
             _entityPosition.Remove(entityId, out _);
             _entityColor.Remove(entityId, out _);
@@ -130,19 +123,39 @@ namespace SyncWorld2DServer
             var beginX = positionX + pingDeltaX; // 클라이언트가 보낸 X좌표 + 10ms의 핑동안 이동한 거리 
             var beginY = positionY + pingDeltaX; // 클라이언트가 보낸 Y좌표 + 10ms의 핑동안 이동한 거리
 
-            var targetX = beginX + velocityX * 0.1f + 0.5f * accelerationX * 0.01f; // 다음 주기에 받을 클라이언트 X좌표의 예상된 값
-            var targetY = beginY + velocityY * 0.1f + 0.5f * accelerationY * 0.01f; // 다음 주기에 받을 클라이언트 Y좌표의 예상된 값
+            if (beginY < -100.0f)
+            {
+                var teleportX = 0.0f;
+                var teleportY = 10.0f;
+                _entityPosition[entityId] = (teleportX, teleportY);
 
-            _entityPosition[entityId] = (beginX, beginY);
+                var message = new TeleportEntityMessage() { EntityId = entityId, X = teleportX, Y = teleportY };
+                Broadcast(Protocol.StcTeleportEntity, ref message);
+            }
+            else
+            {
+                var targetX = beginX + velocityX * 0.1f + 0.5f * accelerationX * 0.01f; // 다음 주기에 받을 클라이언트 X좌표의 예상된 값
+                var targetY = beginY + velocityY * 0.1f + 0.5f * accelerationY * 0.01f; // 다음 주기에 받을 클라이언트 Y좌표의 예상된 값
+                _entityPosition[entityId] = (beginX, beginY);
 
-            var message = new MoveEntityMessage() { EntityId = entityId, X = targetX, Y = targetY };
+                var message = new MoveEntityMessage() { EntityId = entityId, X = targetX, Y = targetY };
+                BroadcastExcluding(Protocol.StcMoveEntity, ref message, playerId);
+            }
+        }
+
+        private void BroadcastExcluding<T>(int messageId, ref T message, uint excludingPlayerId) where T : struct => BroadcastImpl<T>(messageId, ref message, excludingPlayerId);
+
+        private void Broadcast<T>(int messageId, ref T message) where T : struct => BroadcastImpl<T>(messageId, ref message, null);
+
+        private void BroadcastImpl<T>(int messageId, ref T message, uint? excludingPlayerId) where T : struct
+        {
             foreach (var context in _players.Values)
             {
-                if (context.Id == playerId)
+                if (excludingPlayerId != null && excludingPlayerId == context.Id)
                 {
                     continue;
                 }
-                context.WriteMessage(Protocol.StcMoveEntity, ref message);
+                context.WriteMessage(messageId, ref message);
             }
         }
     }

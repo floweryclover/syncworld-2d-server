@@ -11,6 +11,7 @@ namespace SyncWorld2DProtocol.Stc
         bool OnUnpossessEntity();
         bool OnMoveEntity(uint entityId, float x, float y);
         bool OnAssignEntityColor(uint entityId, float r, float g, float b);
+        bool OnTeleportEntity(uint entityId, float x, float y);
 
         public sealed void Handle(RingBuffer receiveRingBuffer)
         {
@@ -69,6 +70,12 @@ namespace SyncWorld2DProtocol.Stc
                             shouldContinue = OnAssignEntityColor(assignEntityColorMessage.EntityId, assignEntityColorMessage.R, assignEntityColorMessage.G, assignEntityColorMessage.B);
                             break;
                         }
+                    case Protocol.StcTeleportEntity:
+                        {
+                            var teleportEntityMessage = MemoryPackSerializer.Deserialize<TeleportEntityMessage>(body);
+                            shouldContinue = OnTeleportEntity(teleportEntityMessage.EntityId, teleportEntityMessage.X, teleportEntityMessage.Y);
+                            break;
+                        }
                     default:
                         {
                             throw new InvalidProgramException($"알 수 없는 STC 메시지 ID를 수신했습니다: {headerMessageId}");
@@ -121,5 +128,13 @@ namespace SyncWorld2DProtocol.Stc
         public float R { get; set; }
         public float G { get; set; }
         public float B { get; set; }
+    }
+
+    [MemoryPackable]
+    public partial struct TeleportEntityMessage
+    {
+        public uint EntityId { get; set; }
+        public float X { get; set; }
+        public float Y { get; set; }
     }
 }
