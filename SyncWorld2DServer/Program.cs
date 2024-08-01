@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using System.Diagnostics;
+using System.Net.Sockets;
 using SyncWorld2DProtocol;
 using SyncWorld2DServer;
 
@@ -7,6 +8,22 @@ tcpListener.Start(8);
 uint newPlayerId = 0;
 var newPlayerIdLock = new object();
 var world = new World();
+
+var gameLogicUpdateTask = Task.Run(
+    () =>
+    {
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
+        long previousMilliseconds = stopwatch.ElapsedMilliseconds;
+        while (true)
+        {
+            long currentMilliseconds = stopwatch.ElapsedMilliseconds;
+            float deltaTime = (currentMilliseconds - previousMilliseconds) / 1000.0f;
+            world.Update(deltaTime);
+
+            Thread.Sleep(16);
+        }
+    });
 
 while (true)
 {

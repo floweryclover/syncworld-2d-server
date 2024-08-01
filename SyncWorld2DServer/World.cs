@@ -8,22 +8,28 @@ namespace SyncWorld2DServer
     {
         private ConcurrentDictionary<uint, Context> _players;
         private ConcurrentDictionary<uint, uint> _playerCharacters;
+        private ConcurrentDictionary<uint, object?> _entities;
         private uint _newEntityId;
         private readonly object _newEntityIdLock;
 
         // 컴포넌트
         private ConcurrentDictionary<uint, (float, float)> _entityPosition;
         private ConcurrentDictionary<uint, (float, float, float)> _entityColor;
+        private ConcurrentDictionary<uint, (float, float, float, float)> _entityMovement; // vx, vy, ax, ay
+        private ConcurrentDictionary<uint, (float, float)> _entityBoxCollision; // width, height
         
         public World()
         {
             _players = new ConcurrentDictionary<uint, Context>();
             _playerCharacters = new ConcurrentDictionary<uint, uint>();
+            _entities = new ConcurrentDictionary<uint, object?>();
             _newEntityId = 0;        
             _newEntityIdLock = new object();
 
             _entityPosition = new ConcurrentDictionary<uint, (float, float)>();
             _entityColor = new ConcurrentDictionary<uint, (float, float, float)>();
+            _entityMovement = new ConcurrentDictionary<uint, (float, float, float, float)>();
+            _entityBoxCollision = new ConcurrentDictionary<uint, (float, float)>();
         }
 
         public bool SpawnPlayerCharacter(uint owningPlayerId, out uint spawnedEntityId)
@@ -39,6 +45,7 @@ namespace SyncWorld2DServer
                 _newEntityId++;
             }
 
+            _entities.TryAdd(spawnedEntityId, null);
             var spawnPosition = new ValueTuple<float, float>(0.0f, 5.0f);
             var random = new Random();
             var color = new ValueTuple<float, float, float>(random.NextSingle(), random.NextSingle(), random.NextSingle());
@@ -55,6 +62,38 @@ namespace SyncWorld2DServer
             return true;
         }
 
+        public void SpawnSoccerBall()
+        {
+            uint spawnedEntityId;
+            lock (_newEntityIdLock)
+            {
+                spawnedEntityId = _newEntityId;
+                _newEntityId++;
+            }
+
+            _entities.TryAdd(spawnedEntityId, null);
+            _entityPosition.TryAdd(spawnedEntityId, (0.0f, 10.0f));
+            _entityBoxCollision.TryAdd(spawnedEntityId, (10.0f, 10.0f));
+            _entityMovement.TryAdd(spawnedEntityId, (0.0f, 0.0f, 0.0f, 0.0f));
+        }
+
+        public void DespawnEntity(uint entityId)
+        {
+            if (!_entities.ContainsKey(entityId))
+            {
+                return;
+            }
+
+            var despawnEntityMessage = new DespawnEntityMessage() { EntityId = entityId };
+            Broadcast(Protocol.StcDespawnEntity, ref despawnEntityMessage);
+
+            _entityPosition.Remove(entityId, out _);
+            _entityColor.Remove(entityId, out _);
+            _entityMovement.Remove(entityId, out _);
+            _entityBoxCollision.Remove(entityId, out _);
+            _entities.Remove(entityId, out _);
+        }
+
         public void DespawnPlayerCharacter(uint owningPlayerId)
         {
             uint entityId;
@@ -62,11 +101,7 @@ namespace SyncWorld2DServer
             {
                 return;
             }
-            var despawnEntityMessage = new DespawnEntityMessage() { EntityId = entityId };
-            Broadcast(Protocol.StcDespawnEntity, ref despawnEntityMessage);
-
-            _entityPosition.Remove(entityId, out _);
-            _entityColor.Remove(entityId, out _);
+            DespawnEntity(entityId);
         }
 
         public bool TryGetEntityPosition(uint entityId, out ValueTuple<float, float> position) => _entityPosition.TryGetValue(entityId, out position);
@@ -123,23 +158,30 @@ namespace SyncWorld2DServer
             var beginX = positionX + pingDeltaX; // 클라이언트가 보낸 X좌표 + 10ms의 핑동안 이동한 거리 
             var beginY = positionY + pingDeltaX; // 클라이언트가 보낸 Y좌표 + 10ms의 핑동안 이동한 거리
 
-            if (beginY < -100.0f)
-            {
-                var teleportX = 0.0f;
-                var teleportY = 10.0f;
-                _entityPosition[entityId] = (teleportX, teleportY);
+            var targetX = beginX + velocityX * 0.1f + 0.5f * accelerationX * 0.01f; // 다음 주기에 받을 클라이언트 X좌표의 예상된 값
+            var targetY = beginY + velocityY * 0.1f + 0.5f * accelerationY * 0.01f; // 다음 주기에 받을 클라이언트 Y좌표의 예상된 값
+            _entityPosition[entityId] = (beginX, beginY);
 
-                var message = new TeleportEntityMessage() { EntityId = entityId, X = teleportX, Y = teleportY };
-                Broadcast(Protocol.StcTeleportEntity, ref message);
-            }
-            else
-            {
-                var targetX = beginX + velocityX * 0.1f + 0.5f * accelerationX * 0.01f; // 다음 주기에 받을 클라이언트 X좌표의 예상된 값
-                var targetY = beginY + velocityY * 0.1f + 0.5f * accelerationY * 0.01f; // 다음 주기에 받을 클라이언트 Y좌표의 예상된 값
-                _entityPosition[entityId] = (beginX, beginY);
+            var message = new MoveEntityMessage() { EntityId = entityId, X = targetX, Y = targetY };
+            BroadcastExcluding(Protocol.StcMoveEntity, ref message, playerId);
+        }
 
-                var message = new MoveEntityMessage() { EntityId = entityId, X = targetX, Y = targetY };
-                BroadcastExcluding(Protocol.StcMoveEntity, ref message, playerId);
+        public void Update(double deltaTime)
+        {
+            foreach (var kvp in _entityPosition)
+            {
+                var entityId = kvp.Key;
+                var position = kvp.Value;
+
+                if (position.Item2 < -100.0f)
+                {
+                    var teleportX = 0.0f;
+                    var teleportY = 10.0f;
+                    _entityPosition[entityId] = (teleportX, teleportY);
+
+                    var message = new TeleportEntityMessage() { EntityId = entityId, X = teleportX, Y = teleportY };
+                    Broadcast(Protocol.StcTeleportEntity, ref message);
+                }
             }
         }
 
