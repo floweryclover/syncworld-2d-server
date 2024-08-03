@@ -5,7 +5,15 @@ namespace SyncWorld2DProtocol.Stc
 {
     public interface IStcHandler
     {
-        bool OnSpawnEntity(uint entityId, float x, float y);
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="entityId"></param>
+        /// <param name="entityType">0은 플레이어, 1은 공</param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <returns></returns>
+        bool OnSpawnEntity(uint entityId, uint entityType, float x, float y);
         bool OnDespawnEntity(uint entityId);
         bool OnPossessEntity(uint entityId);
         bool OnUnpossessEntity();
@@ -37,7 +45,7 @@ namespace SyncWorld2DProtocol.Stc
                     case Protocol.StcSpawnEntity:
                         {
                             var spawnEntityMessage = MemoryPackSerializer.Deserialize<SpawnEntityMessage>(body);
-                            shouldContinue = OnSpawnEntity(spawnEntityMessage.EntityId, spawnEntityMessage.X, spawnEntityMessage.Y);
+                            shouldContinue = OnSpawnEntity(spawnEntityMessage.EntityId, spawnEntityMessage.EntityType, spawnEntityMessage.X, spawnEntityMessage.Y);
                             break;
                         }
                     case Protocol.StcDespawnEntity:
@@ -94,6 +102,7 @@ namespace SyncWorld2DProtocol.Stc
     public partial struct SpawnEntityMessage
     {
         public uint EntityId { get; set; }
+        public uint EntityType { get; set; } // 0은 플레이어, 1은 공
         public float X { get; set; }
         public float Y { get; set; }
     }
