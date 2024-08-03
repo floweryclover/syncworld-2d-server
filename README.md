@@ -2,7 +2,8 @@
 
 [클라이언트 프로젝트](https://github.com/floweryclover/syncworld-2d-client.git)
 
-[(티스토리)https://floweryclover.tistory.com/25](https://floweryclover.tistory.com/25)
+[(티스토리)서버 차원의 엔티티 충돌 및 이동 동기화 (축구공)](https://floweryclover.tistory.com/25)
+
 [(티스토리)등가속도 운동 공식(추측항법)을 이용한 실시간 캐릭터 이동 동기화](https://floweryclover.tistory.com/24)
 
 
