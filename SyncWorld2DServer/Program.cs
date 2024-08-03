@@ -20,6 +20,7 @@ var gameLogicUpdateTask = Task.Run(
             long currentMilliseconds = stopwatch.ElapsedMilliseconds;
             float deltaTime = (currentMilliseconds - previousMilliseconds) / 1000.0f;
             world.Update(deltaTime);
+            previousMilliseconds = currentMilliseconds;
 
             Thread.Sleep(16);
         }
